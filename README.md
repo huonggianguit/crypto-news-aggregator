@@ -113,12 +113,12 @@ graph TB
     CHAT -->|Request| API
     API -->|Response| CHAT
 
-    style CRAWLER fill:#e3f2fd
-    style AI fill:#fff3e0
-    style DB1 fill:#f3e5f5
-    style DB2 fill:#e8f5e9
-    style WEB fill:#fce4ec
-    style SCHEDULER fill:#fff9c4
+    style CRAWLER fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style AI fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000
+    style DB1 fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    style DB2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style WEB fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    style SCHEDULER fill:#fff59d,stroke:#f57f17,stroke-width:2px,color:#000
 ```
 
 ### 2.2 Luồng hoạt động (Data Flow)

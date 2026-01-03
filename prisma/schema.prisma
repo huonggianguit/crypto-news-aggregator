@@ -1,0 +1,112 @@
+// prisma/schema.prismanop
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Tên hiển thị của Sub-tab (Vd: Tin tức BTC)
+  name      String   
+  
+  // Đây là KHOÁ. Mọi bài viết sẽ bám theo cái này.
+  //  để @unique để đảm bảo không có 2 mục trùng link.
+  slug      String   @unique 
+  
+  // Đây là Main Tab.
+  groupName String?  
+  posts     Post[]
+}
+
+// Bảng Bài viết
+model Post {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug      String   @unique // Link bài viết
+  title     String
+  description   String?  // Mô tả ngắn
+  content   String?  // Nội dung HTML 
+  main_img String
+  image Json?  // Link ảnh
+  toc       Json?
+  source    String?  // Nguồn crawl (vnexpress, tuoitre, tapchibitcoin)
+  categoryId String   @db.ObjectId
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId]) // Tìm bài viết theo danh mục cực nhanh
+  @@index([createdAt])  // Sort bài viết mới nhất cực nhanh
+}
+
+// Bảng lưu ảnh từ Unsplash (tránh trùng lặp)
+model UnsplashImage {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  unsplashId      String   @unique // ID ảnh từ Unsplash
+  imageUrl        String   // URL ảnh full
+  thumbnailUrl    String   // URL thumbnail
+  photographer    String   // Tên photographer
+  photographerUrl String   // Link profile
+  keywordUsed     String   // Từ khóa đã search
+  articleId       String?  @db.ObjectId // Bài viết sử dụng (optional)
+  position        String   // 'title', 'heading', 'content'
+  blurHash        String?  // Cho placeholder
+  createdAt       DateTime @default(now())
+  
+  @@index([articleId])
+}
+
+// Bảng Văn bản pháp luật
+model LegalDocument {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug             String   @unique // Link văn bản
+  title            String   // Tên văn bản pháp luật
+  summary          String?  // Tóm tắt ngắn
+  content          String?  // Nội dung HTML
+  lawNumber        String?  // Số hiệu văn bản
+  issuingAgency    String?  // Cơ quan ban hành
+  promulgationDate DateTime? // Ngày ban hành
+  effectiveDate    DateTime? // Ngày có hiệu lực
+  attachmentUrl    String?  // URL tập tin đính kèm
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([lawNumber])
+  @@index([createdAt])
+}
+
+// Bảng lưu bài báo crawl (staging trước khi xử lý)
+model CrawlArticle {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  sourceUrl      String   @unique // URL gốc bài báo
+  title          String   // Tiêu đề gốc
+  content        String   // Nội dung HTML gốc
+  author         String?  // Tác giả
+  publishedDate  DateTime? // Ngày xuất bản
+  source         String   // Nguồn: vnexpress, tuoitre, ...
+  checksum       String?  // Hash nội dung để detect changes
+  
+  // Metadata
+  mainImage      String?  // Link ảnh chính
+  description    String?  // Mô tả/excerpt
+  tags           Json?    // Tags từ nguồn
+  
+  // Trạng thái xử lý
+  status         String   @default("pending") // pending, processed, rejected
+  
+  lastFetchedAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([source])
+  @@index([status])
+  @@index([publishedDate])
+  @@index([lastFetchedAt])
+}

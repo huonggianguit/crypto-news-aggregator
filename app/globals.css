@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Map biến font từ next/font (layout.tsx) */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-merriweather);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* ✅ FIX: Chặn tràn ngang gây layout văng khỏi container */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ✅ Smooth scroll cho TOC anchor */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ✅ FIX: Box sizing chuẩn để padding/border không làm vỡ layout */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ✅ FIX: Material Symbols hiển thị đúng icon (không hiện text như "description") */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  line-height: 1;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+/* ✅ CHỐT FONT TOÀN SITE */
+body {
+  background: var(--background);
+  color: var(--foreground);
+
+  /* ✅ FONT CƠ BẢN (system font) */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+/* (Tuỳ chọn) Nếu có chỗ bị font lạc, ép inherit */
+* {
+  font-family: inherit;
+}
+
+/* ✅ Đảm bảo code/mono nhìn đúng khi cần */
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ✅ TOC nhảy không bị header che (đặc biệt khi bạn có header fixed) */
+article :is(h2, h3, h4, h5) {
+  scroll-margin-top: 140px; /* chỉnh 120-180 tuỳ độ cao header */
+}
+
+/* ✅ Style cho tiêu đề trong nội dung bài báo (h2, h3, h4, h5) */
+article h2,
+article h3,
+article h4,
+article h5 {
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 900;
+  background: linear-gradient(to right, rgb(220, 38, 38), rgb(239, 68, 68));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ✅ Style cho paragraph chứa strong (tiêu đề giả dạng như "Kết luận") */
+article p > strong {
+  display: block;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 2.25rem; /* text-4xl ~ 2.25rem */
+  font-weight: 900;
+  background: linear-gradient(to right, rgb(220, 38, 38), rgb(239, 68, 68));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}

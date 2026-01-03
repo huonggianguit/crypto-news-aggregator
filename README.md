@@ -70,51 +70,56 @@
 
 ### 2.1 Sơ đồ Tổng quan
 
-` ascii
-┌──────────────────────────────────────────────────────────────────┐
-│                     CRAWLER ENGINE (Playwright)                  │
-│   ┌──────────────────────────┐       ┌────────────────────────┐  │
-│   │  SearchCrawler           │       │  ArticleCrawler        │  │
-│   │ (Tìm URL theo keyword)  │──────▶│ (Crawl full content)   │  │
-│   └──────────────────────────┘       └────────────────────────┘  │
-└────────────────────────┬─────────────────────────────────────────┘
-                         │ (Lưu bài thô)
-                         ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                  DATABASE (MongoDB + Prisma)                     │
-│   ┌──────────────────────────────────────────────────────────┐   │
-│   │  Collection: CrawlArticle (Staging - Bài viết thô)       │   │
-│   └──────────────────────────────────────────────────────────┘   │
-└────────────────────────┬─────────────────────────────────────────┘
-                         │ (Scheduler kích hoạt)
-                         ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                      PUBLISHER ENGINE (AI)                       │
-│   ┌──────────────────────────┐       ┌────────────────────────┐  │
-│   │  ArticleRewriter (Groq)  │──────▶│  Publisher             │  │
-│   │ (Viết lại title, content)│       │ (Lưu vào bảng Post)    │  │
-│   └──────────────────────────┘       └────────────────────────┘  │
-└────────────────────────┬─────────────────────────────────────────┘
-                         │ (Lưu bài đã publish)
-                         ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                  DATABASE (MongoDB + Prisma)                     │
-│   ┌──────────────────────────────────────────────────────────┐   │
-│   │  Collection: Post (Production - Bài viết chính)          │   │
-│   └──────────────────────────────────────────────────────────┘   │
-└────────────────────────┬─────────────────────────────────────────┘
-                         │ REST API
-                         ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                  FRONTEND & BACKEND (Next.js)                    │
-│   ┌──────────────────┐               ┌───────────────────────┐   │
-│   │  Public Website  │               │  API Routes           │   │
-│   │  - / (Home)      │               │  - /api/chat          │   │
-│   │  - /[slug]       │◀─────────────▶│  - /api/search        │   │
-│   │  - /chat (UI)    │               │  - ...                │   │
-│   └──────────────────┘               └───────────────────────┘   │
-└──────────────────────────────────────────────────────────────────┘
-`
+```mermaid
+graph TB
+    subgraph CRAWLER["🕷️ CRAWLER ENGINE (Playwright)"]
+        SC[SearchCrawler<br/>Tìm URL theo keyword]
+        AC[ArticleCrawler<br/>Crawl full content]
+        SC -->|Tìm thấy URL| AC
+    end
+
+    subgraph DB1["💾 DATABASE - Staging"]
+        CRAWL[(CrawlArticle<br/>Bài viết thô - pending)]
+    end
+
+    subgraph SCHEDULER["⏰ SCHEDULER"]
+        CRON1[Cron Job: Crawl mỗi giờ]
+        CRON2[Cron Job: Publish tự động]
+    end
+
+    subgraph AI["🤖 PUBLISHER ENGINE"]
+        REWRITER[ArticleRewriter<br/>Groq AI - Llama 3.1]
+        PUB[Publisher<br/>Viết lại & tối ưu SEO]
+        REWRITER -->|Generate nội dung mới| PUB
+    end
+
+    subgraph DB2["💾 DATABASE - Production"]
+        POST[(Post<br/>Bài viết đã xuất bản)]
+    end
+
+    subgraph WEB["🌐 FRONTEND & BACKEND (Next.js)"]
+        PAGES[Pages<br/>/ - /article/slug<br/>/van-ban-phap-ly]
+        API[API Routes<br/>/api/chat<br/>/api/search]
+        CHAT[ChatBot UI<br/>Hỏi đáp AI]
+    end
+
+    AC -->|Lưu bài thô| CRAWL
+    CRON1 -.->|Trigger| SC
+    CRAWL -->|Pending articles| REWRITER
+    CRON2 -.->|Trigger| REWRITER
+    PUB -->|Lưu bài đã publish| POST
+    POST -->|REST API| PAGES
+    POST -->|Search| API
+    CHAT -->|Request| API
+    API -->|Response| CHAT
+
+    style CRAWLER fill:#e3f2fd
+    style AI fill:#fff3e0
+    style DB1 fill:#f3e5f5
+    style DB2 fill:#e8f5e9
+    style WEB fill:#fce4ec
+    style SCHEDULER fill:#fff9c4
+```
 
 ### 2.2 Luồng hoạt động (Data Flow)
 
@@ -303,36 +308,62 @@ ts-node scripts/scheduler-daemon.ts
 
 ### 8.1 Cấu trúc thư mục
 
-`
+```
 Crypto_news/
-├── app/
-│   ├── api/              # API Routes (e.g., /api/chat)
-│   ├── [slug]/           # Trang chi tiết bài viết
-│   ├── layout.tsx        # Layout chính
-│   └── page.tsx          # Trang chủ
 │
-├── components/
-│   ├── ChatBot.tsx       # Component chatbot
-│   └── ...               # Các UI components khác
+├─📁 app/                          # Next.js App Router
+│  ├─📁 api/                       # API Routes
+│  │  ├─📁 chat/                   # Chatbot endpoint
+│  │  ├─📁 search/                 # Search endpoint
+│  │  └─📁 scheduler/              # Scheduler status
+│  ├─📁 [slug]/                    # Dynamic routes - chi tiết bài
+│  ├─📁 article/[slug]/            # Trang bài viết
+│  ├─📁 van-ban-phap-ly/           # Trang văn bản pháp lý
+│  ├─📄 layout.tsx                 # Root layout
+│  ├─📄 page.tsx                   # Trang chủ
+│  └─📄 globals.css                # Global styles
 │
-├── lib/
-│   ├── ai/               # Logic AI (ArticleRewriter)
-│   ├── crawler/          # Logic Crawler (ArticleCrawler, SearchCrawler)
-│   ├── publisher/        # Logic đăng bài
-│   ├── scheduler/        # Logic lập lịch
-│   └── prisma.ts         # Khởi tạo Prisma client
+├─📁 components/                   # React Components
+│  ├─📄 ChatBot.tsx                # 🤖 AI Chatbot UI
+│  ├─📄 SearchBox.tsx              # 🔍 Search component
+│  ├─📁 header-web/                # Header components
+│  ├─📁 footer-web/                # Footer components
+│  └─📁 page/                      # Page-specific components
 │
-├── prisma/
-│   └── schema.prisma     # Định nghĩa Database Schema
+├─📁 lib/                          # Core Business Logic
+│  ├─📁 ai/                        # 🤖 AI Modules
+│  │  └─📄 articleRewriter.ts     # Groq AI rewriter
+│  ├─📁 crawler/                   # 🕷️ Crawler Engine
+│  │  ├─📄 searchCrawler.ts       # Tìm URL theo keyword
+│  │  ├─📄 articleCrawler.ts      # Crawl full content
+│  │  └─📄 crawlRepository.ts     # Lưu vào DB
+│  ├─📁 publisher/                 # 📰 Publisher Logic
+│  │  └─📄 articlePublisher.ts    # Publish articles
+│  ├─📁 scheduler/                 # ⏰ Scheduler
+│  │  └─📄 crawlScheduler.ts      # Cron job logic
+│  ├─📁 unsplash/                  # 🖼️ Image service
+│  └─📄 prisma.ts                  # Prisma client instance
 │
-├── scripts/
-│   ├── auto-crawl-crypto.ts # Script tự động crawl
-│   ├── publish-articles.ts  # Script tự động publish
-│   └── scheduler-daemon.ts  # Trình chạy cron job
+├─📁 models/                       # Data Models
+│  ├─📄 postModel.ts               # Post queries
+│  └─📄 catalogModel.ts            # Catalog queries
 │
-├── package.json
-└── README.md             # File này
-`
+├─📁 prisma/                       # 💾 Database
+│  └─📄 schema.prisma              # MongoDB schema definition
+│
+├─📁 scripts/                      # 🔧 Automation Scripts
+│  ├─📄 auto-crawl-crypto.ts      # Tự động crawl mỗi giờ
+│  ├─📄 publish-articles.ts       # Tự động publish bài
+│  ├─📄 scheduler-daemon.ts       # Cron daemon process
+│  ├─📄 crawl-crypto-news.ts      # Manual crawl script
+│  └─📄 verify-images.ts          # Kiểm tra ảnh
+│
+├─📁 public/                       # Static assets
+├─📄 package.json                  # Dependencies
+├─📄 tsconfig.json                 # TypeScript config
+├─📄 next.config.ts                # Next.js config
+└─📄 README.md                     # Documentation
+```
 
 ### 8.2 License
 

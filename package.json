@@ -10,7 +10,13 @@
     "crawl": "ts-node scripts/crawl-crypto-news.ts",
     "auto-crawl": "ts-node scripts/auto-crawl-crypto.ts",
     "test-coinphoton": "ts-node scripts/test-coinphoton.ts",
-    "publish": "ts-node scripts/publish-articles.ts"
+    "publish": "ts-node scripts/publish-articles.ts",
+    "run-crawl": "ts-node scripts/run-crawl.ts",
+    "add-source": "ts-node scripts/add-source.ts",
+    "scheduler": "ts-node scripts/scheduler-daemon.ts",
+    "test-setup": "ts-node scripts/test-setup.ts",
+    "crawl-legal": "ts-node scripts/crawl-legal-docs.ts",
+    "seed-legal": "ts-node scripts/seed-legal-docs.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

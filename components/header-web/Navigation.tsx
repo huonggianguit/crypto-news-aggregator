@@ -39,10 +39,8 @@ export function Navigation({ isScrolled }: NavigationProps) {
       label: "Kiến thức",
       icon: "school",
       submenu: [
-        { label: "Blockchain cơ bản", href: "#" },
-        { label: "DeFi", href: "#" },
-        { label: "NFT & Metaverse", href: "#" },
-        { label: "Web3", href: "#" },
+        { label: "📚 Tài nguyên học tập", href: "/kien-thuc" },
+        { label: "🎓 Khóa học & Công cụ", href: "/kien-thuc-1" },
       ],
     },
     {
@@ -64,6 +62,11 @@ export function Navigation({ isScrolled }: NavigationProps) {
       label: "Bảng giá",
       icon: "currency_bitcoin",
       href: "#",
+    },
+    {
+      label: "Quản lý ví",
+      icon: "wallet",
+      href: "/quan-ly-vi",
     },
     {
       label: "Liên hệ",

@@ -110,3 +110,63 @@ model CrawlArticle {
   @@index([publishedDate])
   @@index([lastFetchedAt])
 }
+
+// Bảng nguồn tin (Source management)
+model Source {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Thông tin cơ bản
+  name          String   // Tên nguồn (VNExpress, TuoiTre, CoinDesk...)
+  domain        String   @unique // Domain chính (vnexpress.net)
+  baseUrl       String   // URL base để crawl
+  
+  // Cấu hình selector
+  selectors     Json     // { title, content, author, date, mainImage }
+  
+  // Tình trạng
+  isActive      Boolean  @default(true)
+  lastCrawlAt   DateTime?
+  totalCrawled  Int      @default(0)
+  failCount     Int      @default(0) // Số lần crawl lỗi liên tiếp
+  
+  // Metadata
+  language      String   @default("vi") // vi, en
+  country       String?  // VN, US
+  category      String?  // crypto, tech, finance
+  priority      Int      @default(1) // 1-5 (5 cao nhất)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([isActive])
+  @@index([priority])
+}
+
+// Bảng log hệ thống
+model SystemLog {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Loại log
+  level         String   // info, warn, error, debug
+  module        String   // crawler, ai_writer, publisher, scheduler
+  action        String   // crawl_start, rewrite_success, publish_failed...
+  
+  // Nội dung
+  message       String
+  details       Json?    // Chi tiết thêm (object, error stack...)
+  
+  // Context
+  articleId     String?  @db.ObjectId // ID bài viết liên quan
+  sourceUrl     String?  // URL liên quan
+  userId        String?  // User trigger (nếu có)
+  
+  // Metrics
+  duration      Int?     // Thời gian xử lý (ms)
+  memoryUsage   Float?   // MB
+  
+  timestamp     DateTime @default(now())
+  
+  @@index([level])
+  @@index([module])
+  @@index([timestamp])
+}

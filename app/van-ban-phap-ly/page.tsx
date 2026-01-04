@@ -64,9 +64,9 @@ export default async function LegalNewsPage() {
   const total = await prisma.legalDocument.count();
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans text-gray-800 pt-32">
-      {/* Top Navigation Bar (Mimic) */}
-      <div className="fixed top-28 left-0 right-0 bg-[#b91c1c] text-white text-sm z-40">
+    <div className="min-h-screen bg-gray-100 font-sans text-gray-800">
+      {/* Top Navigation Bar (Mimic) - Changed from fixed to relative */}
+      <div className="relative bg-[#b91c1c] text-white text-sm mt-28">
         <div className="max-w-7xl mx-auto px-4 h-10 flex items-center justify-between">
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
             <Link href="/" className="font-bold hover:text-yellow-200 whitespace-nowrap">TRANG CHỦ</Link>
@@ -89,7 +89,7 @@ export default async function LegalNewsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 mt-6">
         {/* Header Banner Area */}
         <div className="flex items-center justify-between mb-6 border-b border-gray-300 pb-4">        
           <div className="flex items-center gap-3">

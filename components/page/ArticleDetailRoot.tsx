@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import type { BlogPost } from "./BlogDetail";
+import QuickTools from "@/components/QuickTools";
 
 type Props = {
   post: BlogPost;
@@ -461,31 +462,9 @@ function ArticleDetail({ data }: ArticleDetailProps) {
 
             {/* RIGHT SIDEBAR */}
             <aside className="w-full lg:w-1/3 flex flex-col gap-8">
-              {/* Quick utilities */}
+              {/* Quick Tools */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">
-                  Tiện ích nhanh
-                </h3>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: "trending_up", label: "Theo dõi giá" },
-                    { icon: "currency_exchange", label: "Chuyển đổi tiền tệ" },
-                    { icon: "calculate", label: "Tính lãi/lỗ" },
-                    { icon: "wallet", label: "Quản lý ví" },
-                  ].map((x) => (
-                    <a
-                      key={x.icon}
-                      href="#"
-                      className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-gray-50 hover:bg-red-50 hover:text-red-600 transition-colors group text-center"
-                    >
-                      <span className="material-symbols-outlined text-3xl text-gray-400 group-hover:text-red-600">
-                        {x.icon}
-                      </span>
-                      <span className="text-sm font-semibold">{x.label}</span>
-                    </a>
-                  ))}
-                </div>
+                <QuickTools />
               </div>
 
               {/* Same category */}

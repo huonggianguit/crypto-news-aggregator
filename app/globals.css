@@ -82,6 +82,26 @@ samp {
 /* ✅ TOC nhảy không bị header che (đặc biệt khi bạn có header fixed) */
 article :is(h2, h3, h4, h5) {
   scroll-margin-top: 140px; /* chỉnh 120-180 tuỳ độ cao header */
+  transition: background-color 0.3s ease;
+}
+
+/* ✅ TOC highlight effect khi click */
+.toc-highlight {
+  animation: tocHighlight 2s ease-out;
+}
+
+@keyframes tocHighlight {
+  0% {
+    background: linear-gradient(90deg, rgba(249, 115, 22, 0.3) 0%, transparent 100%);
+    border-radius: 0.5rem;
+    padding-left: 1rem;
+    margin-left: -1rem;
+  }
+  100% {
+    background: transparent;
+    padding-left: 0;
+    margin-left: 0;
+  }
 }
 
 /* ✅ Style cho tiêu đề trong nội dung bài báo (h2, h3, h4, h5) */

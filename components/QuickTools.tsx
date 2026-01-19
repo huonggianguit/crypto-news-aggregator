@@ -162,14 +162,14 @@ export default function QuickTools() {
               <span className="text-lg">₿</span>
               <span className="font-semibold text-gray-700 dark:text-gray-300">BTC</span>
             </div>
-            <span className="font-bold text-orange-600">${cryptoPrices.BTC.toLocaleString()}</span>
+            <span className="font-bold text-orange-600" suppressHydrationWarning>${cryptoPrices.BTC.toLocaleString('en-US')}</span>
           </div>
           <div className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="text-lg">Ξ</span>
               <span className="font-semibold text-gray-700 dark:text-gray-300">ETH</span>
             </div>
-            <span className="font-bold text-blue-600">${cryptoPrices.ETH.toLocaleString()}</span>
+            <span className="font-bold text-blue-600" suppressHydrationWarning>${cryptoPrices.ETH.toLocaleString('en-US')}</span>
           </div>
         </div>
 

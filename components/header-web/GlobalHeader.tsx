@@ -3,8 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { TopBar } from './TopBar';
 import { Navigation } from './Navigation';
+import { Category } from '@prisma/client';
 
-export function GlobalHeader() {
+interface GlobalHeaderProps {
+  categories?: Category[];
+}
+
+export function GlobalHeader({ categories = [] }: GlobalHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -25,7 +30,7 @@ export function GlobalHeader() {
       }`}
     >
       <TopBar isScrolled={isScrolled} />
-      <Navigation isScrolled={isScrolled} />
+      <Navigation isScrolled={isScrolled} categories={categories} />
     </header>
   );
 }

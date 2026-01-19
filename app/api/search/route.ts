@@ -1,119 +1,65 @@
 // app/api/search/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/index';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q');
 
+    console.log('[API Search] Query:', query);
+
     if (!query || query.trim() === '') {
       return NextResponse.json({ results: [] });
     }
 
-    // Tạo regex để tìm kiếm không phân biệt hoa thường (MongoDB compatible)
-    const searchRegex = new RegExp(query, 'i');
-
-    // Tìm kiếm theo title trước (ưu tiên cao hơn)
-    const titleResults = await prisma.post.findMany({
+    // Simple search with Prisma ORM
+    const articles = await prisma.article.findMany({
       where: {
-        title: {
-          contains: query,
-        },
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { excerpt: { contains: query, mode: 'insensitive' } },
+        ],
       },
       select: {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
-        category: {
+        excerpt: true,
+        thumbnail: true,
+        createdAt: true,
+        categories: {
           select: {
             name: true,
             slug: true,
           },
+          take: 1,
         },
-        createdAt: true,
       },
-      take: 5,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
     });
 
-    // Nếu kết quả từ title chưa đủ, tìm thêm trong description và content
-    let contentResults: Array<{
-      id: string;
-      slug: string;
-      title: string;
-      description: string | null;
-      main_img: string;
-      category: {
-        name: string;
-        slug: string;
-      };
-      createdAt: Date;
-    }> = [];
-    
-    if (titleResults.length < 5) {
-      const titleIds = titleResults.map((post) => post.id);
-      
-      contentResults = await prisma.post.findMany({
-        where: {
-          AND: [
-            {
-              id: {
-                notIn: titleIds, // Loại bỏ các bài đã có trong titleResults
-              },
-            },
-            {
-              OR: [
-                {
-                  description: {
-                    contains: query,
-                  },
-                },
-                {
-                  content: {
-                    contains: query,
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          description: true,
-          main_img: true,
-          category: {
-            select: {
-              name: true,
-              slug: true,
-            },
-          },
-          createdAt: true,
-        },
-        take: 5 - titleResults.length,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-    }
+    console.log('[API Search] Found articles:', articles.length);
 
-    // Kết hợp kết quả: title trước, content sau
-    const results = [...titleResults, ...contentResults];
+    // Format results
+    const results = articles.map((article) => ({
+      id: article.id,
+      slug: article.slug,
+      title: article.title,
+      excerpt: article.excerpt,
+      thumbnail: article.thumbnail,
+      category: article.categories?.[0] || undefined,
+      createdAt: article.createdAt.toISOString(),
+    }));
 
-    return NextResponse.json({
-      results,
-      total: results.length,
-    });
+    console.log('[API Search] Returning:', results.length);
+
+    return NextResponse.json({ results, total: results.length });
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('[API Search] Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Search failed', message: String(error) },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db/index";
 import { Prisma } from "@prisma/client";
 
 interface ChatResponse {
@@ -377,36 +377,44 @@ async function searchByCategory(categoryKeyword: string) {
     const category = await prisma.category.findUnique({
       where: { slug },
       include: {
-        posts: {
+        articles: {
           orderBy: { createdAt: "desc" },
           take: 5,
           select: {
             id: true,
             slug: true,
             title: true,
-            description: true,
-            main_img: true,
+            excerpt: true,
+            thumbnail: true,
             createdAt: true,
           },
         },
       },
     });
 
-    return category?.posts || [];
+    // Map to expected format
+    return (category?.articles || []).map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Search by category error:", error);
     return [];
   }
 }
 
-// Tìm kiếm theo keyword (title/description)
+// Tìm kiếm theo keyword (title/excerpt)
 async function searchByKeyword(keyword: string) {
   try {
-    const posts = await prisma.post.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         OR: [
           { title: { contains: keyword, mode: "insensitive" } },
-          { description: { contains: keyword, mode: "insensitive" } },
+          { excerpt: { contains: keyword, mode: "insensitive" } },
         ],
       },
       orderBy: { createdAt: "desc" },
@@ -415,13 +423,20 @@ async function searchByKeyword(keyword: string) {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
+        excerpt: true,
+        thumbnail: true,
         createdAt: true,
       },
     });
 
-    return posts;
+    return articles.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Search by keyword error:", error);
     return [];
@@ -431,20 +446,27 @@ async function searchByKeyword(keyword: string) {
 // Lấy bài viết mới nhất
 async function getLatestPosts(limit: number = 10) {
   try {
-    const posts = await prisma.post.findMany({
+    const articles = await prisma.article.findMany({
       orderBy: { createdAt: "desc" },
       take: limit,
       select: {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
+        excerpt: true,
+        thumbnail: true,
         createdAt: true,
       },
     });
 
-    return posts;
+    return articles.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Get latest posts error:", error);
     return [];
@@ -455,16 +477,16 @@ async function getLatestPosts(limit: number = 10) {
 async function searchComparisonPosts(searchValue: string) {
   try {
     const comparisonKeywords = ["so sánh", "vs", "hay", "khác nhau", "nên chọn"];
-    const posts = await prisma.post.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         OR: [
           { title: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
-          { description: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
+          { excerpt: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
           ...comparisonKeywords.map(keyword => ({
             title: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           })),
           ...comparisonKeywords.map(keyword => ({
-            description: { contains: keyword, mode: Prisma.QueryMode.insensitive }
+            excerpt: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           }))
         ],
       },
@@ -474,13 +496,20 @@ async function searchComparisonPosts(searchValue: string) {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
+        excerpt: true,
+        thumbnail: true,
         createdAt: true,
       },
     });
 
-    return posts;
+    return articles.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Search comparison posts error:", error);
     return [];
@@ -491,16 +520,16 @@ async function searchComparisonPosts(searchValue: string) {
 async function searchPricingPosts(searchValue: string) {
   try {
     const pricingKeywords = ["giá", "phí", "chi phí", "bao nhiêu", "tiền"];
-    const posts = await prisma.post.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         OR: [
           { title: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
-          { description: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
+          { excerpt: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
           ...pricingKeywords.map(keyword => ({
             title: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           })),
           ...pricingKeywords.map(keyword => ({
-            description: { contains: keyword, mode: Prisma.QueryMode.insensitive }
+            excerpt: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           }))
         ],
       },
@@ -510,13 +539,20 @@ async function searchPricingPosts(searchValue: string) {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
+        excerpt: true,
+        thumbnail: true,
         createdAt: true,
       },
     });
 
-    return posts;
+    return articles.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Search pricing posts error:", error);
     return [];
@@ -527,16 +563,16 @@ async function searchPricingPosts(searchValue: string) {
 async function searchProcedurePosts(searchValue: string) {
   try {
     const procedureKeywords = ["thủ tục", "cách", "đăng ký", "mua", "làm sao", "quy trình"];
-    const posts = await prisma.post.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         OR: [
           { title: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
-          { description: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
+          { excerpt: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
           ...procedureKeywords.map(keyword => ({
             title: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           })),
           ...procedureKeywords.map(keyword => ({
-            description: { contains: keyword, mode: Prisma.QueryMode.insensitive }
+            excerpt: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           }))
         ],
       },
@@ -546,13 +582,20 @@ async function searchProcedurePosts(searchValue: string) {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
+        excerpt: true,
+        thumbnail: true,
         createdAt: true,
       },
     });
 
-    return posts;
+    return articles.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Search procedure posts error:", error);
     return [];
@@ -563,16 +606,16 @@ async function searchProcedurePosts(searchValue: string) {
 async function searchRecommendationPosts(searchValue: string) {
   try {
     const recommendationKeywords = ["tư vấn", "khuyên", "nên", "đề xuất", "lựa chọn"];
-    const posts = await prisma.post.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         OR: [
           { title: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
-          { description: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
+          { excerpt: { contains: searchValue, mode: Prisma.QueryMode.insensitive } },
           ...recommendationKeywords.map(keyword => ({
             title: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           })),
           ...recommendationKeywords.map(keyword => ({
-            description: { contains: keyword, mode: Prisma.QueryMode.insensitive }
+            excerpt: { contains: keyword, mode: Prisma.QueryMode.insensitive }
           }))
         ],
       },
@@ -582,13 +625,20 @@ async function searchRecommendationPosts(searchValue: string) {
         id: true,
         slug: true,
         title: true,
-        description: true,
-        main_img: true,
+        excerpt: true,
+        thumbnail: true,
         createdAt: true,
       },
     });
 
-    return posts;
+    return articles.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      description: a.excerpt,
+      main_img: a.thumbnail,
+      createdAt: a.createdAt,
+    }));
   } catch (error) {
     console.error("Search recommendation posts error:", error);
     return [];

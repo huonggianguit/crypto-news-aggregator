@@ -1,11 +1,8 @@
 // app/article/[slug]/page.tsx
 import { notFound } from "next/navigation";
-import { PostModel } from "@/models/postModel";
-import { ArticleDetailRoot } from "@/components/page/ArticleDetailRoot";
-import { buildContentHtml } from "@/lib/contentUtils";
-import type { BlogPost } from "@/components/page/BlogDetail";
-import { prisma } from "@/lib/prisma";
-import { LegalDetailRoot } from "@/components/page/LegalDetailRoot";
+import { prisma } from "@/lib/db/index";
+import { ArticlePage } from "@/components/page/ArticlePage";
+import type { Metadata } from "next";
 
 type PageProps = {
   params: Promise<{
@@ -13,125 +10,147 @@ type PageProps = {
   }>;
 };
 
-// SEO
-export async function generateMetadata({ params }: PageProps) {
+// SEO Metadata
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await PostModel.getPostBySlug(slug);
 
-  if (post) {
-    return {
-      title: `${post.title} - Website Bảo Hiểm`,
-      description: post.description ?? "",
-    };
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    select: {
+      title: true,
+      excerpt: true,
+      thumbnail: true,
+    },
+  });
+
+  if (!article) {
+    return { title: "Không tìm thấy bài viết" };
   }
 
-  // Try LegalDocument
-  const legalDoc = await (prisma as any).legalDocument.findUnique({ where: { slug } });
-  if (legalDoc) {
-    return {
-      title: `${legalDoc.title} - Văn bản pháp luật`,
-      description: legalDoc.summary ?? "",
-    };
-  }
-
-  return { title: "Không tìm thấy bài viết" };
+  return {
+    title: `${article.title} - Crypto News`,
+    description: article.excerpt || "",
+    openGraph: {
+      title: article.title,
+      description: article.excerpt || "",
+      images: article.thumbnail ? [article.thumbnail] : [],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt || "",
+      images: article.thumbnail ? [article.thumbnail] : [],
+    },
+  };
 }
 
-export default async function ArticlePage({ params }: PageProps) {
+export default async function ArticleDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  
-  // 1. Try finding Post
-  let post = await PostModel.getPostBySlug(slug);
-  let isLegalDoc = false;
 
-  // 2. If not found, try finding LegalDocument
-  if (!post) {
-    const legalDoc = await (prisma as any).legalDocument.findUnique({ where: { slug } });
-    if (legalDoc) {
-      isLegalDoc = true;
-      // Adapt LegalDocument to Post structure
-      post = {
-        id: legalDoc.id,
-        slug: legalDoc.slug,
-        title: legalDoc.title,
-        description: legalDoc.summary,
-        content: legalDoc.content,
-        main_img: "", 
-        image: null,
-        toc: null,
-        categoryId: "legal",
-        category: { name: "Văn bản pháp luật", slug: "van-ban" },
-        createdAt: legalDoc.createdAt,
-        updatedAt: legalDoc.updatedAt,
-        attachmentUrl: legalDoc.attachmentUrl,
-        lawNumber: legalDoc.lawNumber,
-        issuingAgency: legalDoc.issuingAgency,
-        promulgationDate: legalDoc.promulgationDate,
-        effectiveDate: legalDoc.effectiveDate,
-      } as any;
-    }
-  }
+  // Fetch article with all relations
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    include: {
+      categories: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      stats: true,
+      comments: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
+  });
 
-  if (!post) {
+  if (!article) {
     notFound();
   }
 
-  const toc: string[] = Array.isArray(post.toc)
-    ? (post.toc as any[]).filter((t) => typeof t === "string")
-    : [];
+  // Fetch related articles from same categories
+  const categoryIds = article.categories.map((c) => c.id);
+  const relatedArticles = await prisma.article.findMany({
+    where: {
+      slug: { not: slug },
+      categories: {
+        some: {
+          id: { in: categoryIds },
+        },
+      },
+    },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      thumbnail: true,
+      excerpt: true,
+      createdAt: true,
+      categories: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+        take: 1,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
 
-  const contentHtml = buildContentHtml(post.content ?? "", post.image, toc);
-
-  const uiPost: BlogPost = {
-    id: post.id,
-    image: post.main_img && post.main_img.trim() ? post.main_img : (post.image as any)?.url || "/placeholder.jpg",
-    category: post.category?.name ?? "Danh mục",
-    date: post.createdAt.toLocaleDateString("vi-VN"),
-    title: post.title,
-    shortContent: post.description ?? "",
-    contentHtml,
-    toc,
-    source: (post as any).source, // Add source field
-    attachmentUrl: (post as any).attachmentUrl,
-    // Pass legal fields if available
-    lawNumber: isLegalDoc ? (post as any).lawNumber : undefined,
-    issuingAgency: isLegalDoc ? (post as any).issuingAgency : undefined,
-    promulgationDate: isLegalDoc && (post as any).promulgationDate ? new Date((post as any).promulgationDate).toLocaleDateString("vi-VN") : undefined,
-    effectiveDate: isLegalDoc && (post as any).effectiveDate ? new Date((post as any).effectiveDate).toLocaleDateString("vi-VN") : undefined,
+  // Transform data for component
+  const articleData = {
+    id: article.id,
+    slug: article.slug,
+    title: article.title,
+    excerpt: article.excerpt,
+    content: article.content,
+    thumbnail: article.thumbnail,
+    sourceUrl: article.sourceUrl,
+    tags: article.tags,
+    createdAt: article.createdAt.toISOString(),
+    updatedAt: article.updatedAt.toISOString(),
+    toc: article.toc,
+    categories: article.categories,
+    stats: article.stats
+      ? {
+          views: article.stats.views,
+          likes: article.stats.likes,
+          unlikes: article.stats.unlikes,
+          comments: article.stats.comments,
+        }
+      : null,
+    comments: article.comments.map((c) => ({
+      id: c.id,
+      content: c.content,
+      rating: c.rating,
+      createdAt: c.createdAt.toISOString(),
+      user: c.user,
+    })),
   };
 
-  // Get related posts
-  let uiRelated: BlogPost[] = [];
-  if (!isLegalDoc) {
-    const related = await PostModel.getRelatedPosts(post.categoryId, post.slug, 3);
-    uiRelated = related.map((p) => ({
-      id: p.id,
-      image: p.main_img && p.main_img.trim() ? p.main_img : (p.image as any)?.url || "/placeholder.jpg",
-      category: post.category?.name ?? "Danh mục",
-      date: p.createdAt.toLocaleDateString("vi-VN"),
-      title: p.title,
-      shortContent: p.description ?? "",
-      slug: p.slug,
-    }));
-  } else {
-    // For legal docs, fetch other recent legal docs
-    const relatedDocs = await (prisma as any).legalDocument.findMany({
-      where: { slug: { not: slug } },
-      take: 3,
-      orderBy: { createdAt: 'desc' }
-    });
-    uiRelated = relatedDocs.map((d: any) => ({
-      id: d.id,
-      image: "/placeholder.jpg",
-      category: "Văn bản pháp luật",
-      date: d.createdAt.toLocaleDateString("vi-VN"),
-      title: d.title,
-      shortContent: d.summary ?? "",
-      slug: d.slug
-    }));
-  }
+  const relatedData = relatedArticles.map((a) => ({
+    id: a.id,
+    slug: a.slug,
+    title: a.title,
+    thumbnail: a.thumbnail,
+    excerpt: a.excerpt,
+    createdAt: a.createdAt.toISOString(),
+    categories: a.categories,
+  }));
 
-  return isLegalDoc
-    ? <LegalDetailRoot post={uiPost} relatedPosts={uiRelated} />
-    : <ArticleDetailRoot post={uiPost} relatedPosts={uiRelated} />;
+  return <ArticlePage article={articleData} relatedArticles={relatedData} />;
 }
